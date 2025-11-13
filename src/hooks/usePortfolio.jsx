@@ -52,14 +52,32 @@ export function PortfolioProvider({ children }) {
   const sellHolding = useCallback(async (payload) => {
     try {
       setError(null);
-      await portfolioAPI.sellHolding({
+      console.log('Selling holding with payload:', payload);
+      
+      const response = await portfolioAPI.sellHolding({
         holdingId: payload.holdingId,
         quantity: payload.quantity,
         salePrice: payload.salePrice,
         saleDate: payload.saleDate,
       });
-      // Reload portfolio to get updated data
-      await loadPortfolio();
+      
+      console.log('Sale response received:', response);
+      
+      // If response includes updated portfolio, use it immediately
+      if (response && response.portfolio) {
+        console.log('Updating state with portfolio data:', {
+          holdings: response.portfolio.holdings?.length,
+          sales: response.portfolio.sales?.length,
+          totalProfit: response.portfolio.totalProfit,
+        });
+        setHoldings(response.portfolio.holdings || []);
+        setSales(response.portfolio.sales || []);
+        setTotalProfit(response.portfolio.totalProfit || 0);
+      } else {
+        console.log('No portfolio in response, reloading from server');
+        // Otherwise reload from server
+        await loadPortfolio();
+      }
     } catch (err) {
       console.error('Failed to sell holding:', err);
       setError(err.message);

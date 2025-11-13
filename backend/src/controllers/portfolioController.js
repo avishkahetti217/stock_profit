@@ -84,11 +84,29 @@ export const sellHolding = async (req, res) => {
       return res.status(400).json({ error: 'Invalid quantity to sell' });
     }
 
-    const proceeds = quantityToSell * parseFloat(salePrice);
-    const costBasis = quantityToSell * parseFloat(holding.averageCost);
+    // Ensure all values are properly parsed as numbers
+    const salePriceNum = parseFloat(salePrice);
+    const averageCostNum = parseFloat(holding.averageCost);
+    const quantityNum = parseFloat(quantityToSell);
+    const holdingQuantityNum = parseFloat(holding.quantity);
+    
+    // Calculate proceeds and profit
+    const proceeds = quantityNum * salePriceNum;
+    const costBasis = quantityNum * averageCostNum;
     const profit = proceeds - costBasis;
-
-    const remainingQuantity = parseFloat(holding.quantity) - quantityToSell;
+    
+    const remainingQuantity = holdingQuantityNum - quantityNum;
+    
+    console.log('Sale calculation:', {
+      holdingId,
+      quantityToSell: quantityNum,
+      salePrice: salePriceNum,
+      averageCost: averageCostNum,
+      proceeds: proceeds.toFixed(2),
+      costBasis: costBasis.toFixed(2),
+      profit: profit.toFixed(2),
+      remainingQuantity: remainingQuantity.toFixed(4),
+    });
 
     // Update or delete holding
     if (remainingQuantity > 0) {
@@ -97,19 +115,44 @@ export const sellHolding = async (req, res) => {
       await Holding.delete(holdingId);
     }
 
-    // Create sale record
-    const sale = await Sale.create({
-      holdingId,
+    // Create sale record with properly rounded values
+    const saleData = {
+      holdingId: remainingQuantity > 0 ? holdingId : null, // Set to null if holding deleted
       symbol: holding.symbol,
-      quantity: quantityToSell,
-      salePrice: parseFloat(salePrice),
+      quantity: quantityNum,
+      salePrice: salePriceNum,
       proceeds: parseFloat(proceeds.toFixed(2)),
       profit: parseFloat(profit.toFixed(2)),
       purchaseDate: holding.purchaseDate,
       saleDate,
+    };
+    
+    console.log('Creating sale with data:', saleData);
+    const sale = await Sale.create(saleData);
+    console.log('Sale created successfully:', sale);
+
+    // Return updated portfolio data immediately
+    const [updatedHoldings, updatedSales] = await Promise.all([
+      Holding.findAll(),
+      Sale.findAll(),
+    ]);
+
+    const updatedTotalProfit = await Sale.getTotalProfit();
+    
+    console.log('Returning updated portfolio:', {
+      holdingsCount: updatedHoldings.length,
+      salesCount: updatedSales.length,
+      totalProfit: updatedTotalProfit,
     });
 
-    res.status(201).json(sale);
+    res.status(201).json({
+      sale,
+      portfolio: {
+        holdings: updatedHoldings,
+        sales: updatedSales,
+        totalProfit: updatedTotalProfit,
+      },
+    });
   } catch (error) {
     console.error('Error selling holding:', error);
     res.status(500).json({ error: 'Failed to sell holding' });
