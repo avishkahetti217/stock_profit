@@ -13,7 +13,7 @@ export function Home() {
     return holdings.reduce(
       (acc, holding) => {
         acc.count += 1;
-        acc.shares += holding.quantity;
+        acc.shares += parseFloat(holding.quantity);
         return acc;
       },
       { count: 0, shares: 0 },
@@ -21,11 +21,13 @@ export function Home() {
   }, [holdings]);
 
   return (
-    <div className="app">
-      <PortfolioSummary
+
+      <div className="app">
+       <PortfolioSummary
         totalProfit={totalProfit}
         holdingsCount={aggregate.count}
-        openShares={aggregate.shares}
+        // Use ?? 0 to ensure openShares is a number, even if aggregate.shares is initially null/undefined
+        openShares={aggregate.shares ?? 0} 
       />
 
       <div className="grid">

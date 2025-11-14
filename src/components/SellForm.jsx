@@ -19,16 +19,18 @@ export function SellForm({ holdings, onSubmit }) {
       const first = holdings[0];
       setForm((prev) => ({
         ...prev,
-        holdingId: first.id,
+        holdingId: String(first.id),
         quantity: String(first.quantity),
       }));
     }
   }, [holdings, form.holdingId]);
 
-  const selectedHolding = useMemo(
-    () => holdings.find((holding) => holding.id === form.holdingId),
-    [holdings, form.holdingId],
-  );
+  const selectedHolding = useMemo(() => {
+    if (!form.holdingId) return null;
+    // Handle both string and number comparisons
+    const holdingId = Number(form.holdingId);
+    return holdings.find((holding) => holding.id === holdingId || String(holding.id) === form.holdingId);
+  }, [holdings, form.holdingId]);
 
   const isValid = useMemo(() => {
     const quantity = Number.parseFloat(form.quantity);
@@ -53,19 +55,30 @@ export function SellForm({ holdings, onSubmit }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
+    
     if (name === 'holdingId') {
-      const nextHolding = holdings.find((holding) => holding.id === value);
+      // Convert value to number for comparison (select returns string)
+      const holdingId = Number(value);
+      const nextHolding = holdings.find((holding) => holding.id === holdingId || holding.id === value);
+      
       if (nextHolding) {
         setForm((prev) => ({
           ...prev,
+          holdingId: value,
           quantity: String(nextHolding.quantity),
         }));
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          holdingId: value,
+          quantity: '',
+        }));
       }
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
 
@@ -85,7 +98,7 @@ export function SellForm({ holdings, onSubmit }) {
       nextDefault
         ? {
             ...formDefaults,
-            holdingId: nextDefault.id,
+            holdingId: String(nextDefault.id),
             quantity: String(nextDefault.quantity),
           }
         : formDefaults,
@@ -108,7 +121,7 @@ export function SellForm({ holdings, onSubmit }) {
               <option value="">No holdings available</option>
             ) : null}
             {holdings.map((holding) => (
-              <option key={holding.id} value={holding.id}>
+              <option key={holding.id} value={String(holding.id)}>
                 {holding.symbol} · {holding.quantity} shares @ {formatCurrency(holding.averageCost)}
               </option>
             ))}
