@@ -201,9 +201,19 @@ button[disabled]:hover {
   cursor: not-allowed;
 }
 
+/* * FIX: This container handles horizontal scrolling for tables.
+ * It is ready to use in your Home.jsx file.
+ */
+.responsive-table-container {
+  overflow-x: auto;
+}
+
+
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto; 
+  min-width: 600px; /* Ensures space for all columns */
 }
 
 th,
@@ -211,7 +221,18 @@ td {
   text-align: left;
   padding: 0.75rem 0.5rem;
   border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap; 
 }
+
+/* Allow date columns to be slightly more compact */
+th:nth-last-child(1),
+td:nth-last-child(1),
+th:nth-last-child(2),
+td:nth-last-child(2) {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+}
+
 
 th {
   color: #1f2937;
@@ -272,5 +293,3 @@ td {
 .profit.negative {
   color: #b91c1c;
 }
-
-
